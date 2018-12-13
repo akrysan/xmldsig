@@ -9,28 +9,24 @@ using System.Security.Cryptography;
 
 namespace Xmldsig {
     class Program {
+        private static string _currentMode;
         private static string _xmlPath;
         private static string _certPath;
         private static string _password;
 
-        private static string ReadOptions(string[] args) {
-            var currentParameter = "";
-            var options = new OptionSet() {
-                { "sign", "Provide the path to xml file,path to certificate,password", v => currentParameter = "sign" },
-                { "verify", "Provide the path to xml file,path to certificate,password", v => currentParameter = "verify" },
-                { "xmlPath=","",x => _xmlPath = x },
-                { "certPath=","",x => _certPath = x },
-                { "password=","",x => _password = x },
-                
-            };
-            options.Parse(args);
-            return currentParameter;
-        }
-        
         private static void Main(string[] args) {
             try {
-                var key = ReadOptions(args);
-                if (key == "sign" && !string.IsNullOrEmpty(_xmlPath) && !string.IsNullOrEmpty(_certPath) && !string.IsNullOrEmpty(_password)) {
+                var options = new OptionSet() {
+                    { "sign", "Sign certificate", v => _currentMode = "sign" },
+                    { "verify", "Verify signature", v => _currentMode = "verify" },
+                    { "xmlpath=", "Path to XML file to sign", x => _xmlPath = x },
+                    { "certpath=", "Path to PFX certificate", x => _certPath = x },
+                    { "password=", "Password for PFX certificate", x => _password = x },
+                    { "help", "Show this message and exit", x => _password = x },
+                };
+                options.Parse(args);
+
+                if (_currentMode == "sign" && !string.IsNullOrEmpty(_xmlPath) && !string.IsNullOrEmpty(_certPath) && !string.IsNullOrEmpty(_password)) {
                     var doc = XDocument.Load(_xmlPath);
 
                     var cert = new X509Certificate2(File.ReadAllBytes(_certPath), _password);
@@ -40,22 +36,29 @@ namespace Xmldsig {
 
                     File.WriteAllText(_xmlPath, xmlDoc.OuterXml);
                 }
-                if (key == "verify" && !string.IsNullOrEmpty(_xmlPath)) {
+                else if (_currentMode == "verify" && !string.IsNullOrEmpty(_xmlPath)) {
                     var isVerified = VerifyXmlFile(_xmlPath);
                     if (isVerified) {
-                        Console.WriteLine("XML is Verified");
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("XML signature is valid");
+                        Console.ResetColor();
                     }
                     else {
-                        Console.WriteLine("XML is not Verified");
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("XML signature is NOT valid");
+                        Console.ResetColor();
                     }
                 }
+                else {
+                    ShowHelp(options);
+                }
             }
-            catch (Exception e) {
-                Console.WriteLine(e.Message);
+            catch (Exception ex) {
+                Console.WriteLine(ex.Message);
             }
         }
 
-        public static bool VerifyXmlFile(string path) {
+        private static bool VerifyXmlFile(string path) {
             var xmlDocument = XDocument.Load(path).ToXmlDocument();
 
             xmlDocument.PreserveWhitespace = true;
@@ -75,7 +78,8 @@ namespace Xmldsig {
 
             return signedXml.CheckSignature();
         }
-        public static void SignXmlDocumentWithCertificate(XmlDocument doc, X509Certificate2 cert) {
+
+        private static void SignXmlDocumentWithCertificate(XmlDocument doc, X509Certificate2 cert) {
             doc.PreserveWhitespace = true;
             var signedXml = new SignedXml(doc);
 
@@ -103,6 +107,16 @@ namespace Xmldsig {
 
 
             Console.WriteLine("Successfully signed.");
+        }
+
+        private static void ShowHelp(OptionSet p) {
+            Console.WriteLine("Usage: xmldsig -sign -xmlpath=[XMLPATH] -certpath=[CERTPATH] -password=[PASS]");
+            Console.WriteLine("       xmldsig -verify -xmlpath=[XMLPATH]");
+            Console.WriteLine();
+            Console.WriteLine("Sign/verify XML by xmldsig specification.");
+            Console.WriteLine();
+            Console.WriteLine("Options:");
+            p.WriteOptionDescriptions(Console.Out);
         }
     }
 }
