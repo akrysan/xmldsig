@@ -2,7 +2,7 @@
 using System.Xml;
 using System.Xml.Linq;
 
-namespace xmldsig {
+namespace Xmldsig {
     public static class DocumentExtensions {
         public static XmlDocument ToXmlDocument(this XDocument xDocument) {
             var xmlDocument = new XmlDocument();

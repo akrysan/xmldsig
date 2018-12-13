@@ -7,7 +7,7 @@ using System.Xml.Linq;
 using NDesk.Options;
 using System.Security.Cryptography;
 
-namespace xmldsig {
+namespace Xmldsig {
     class Program {
         private static string _xmlPath;
         private static string _certPath;
