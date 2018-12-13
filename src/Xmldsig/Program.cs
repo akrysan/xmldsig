@@ -22,7 +22,7 @@ namespace Xmldsig {
                     { "xmlpath=", "Path to XML file to sign", x => _xmlPath = x },
                     { "certpath=", "Path to PFX certificate", x => _certPath = x },
                     { "password=", "Password for PFX certificate", x => _password = x },
-                    { "help", "Show this message and exit", x => _password = x },
+                    { "help", "Show this message and exit", x => { } },
                 };
                 options.Parse(args);
 
